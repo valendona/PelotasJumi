@@ -17,12 +17,6 @@ public class GameController {
     @SuppressWarnings("unused")
     private Object lastActionSource;
 
-    // Estados de teclas para pulsación continua
-    private boolean leftPressed = false;
-    private boolean rightPressed = false;
-    private boolean upPressed = false;
-    private boolean downPressed = false;
-
     // Bandera para evitar mostrar múltiples diálogos simultáneamente
     private boolean dialogVisible = false;
 
@@ -30,9 +24,8 @@ public class GameController {
         this.model = model;
         this.view = view;
         this.frame = frame;
-        // Usar Key Bindings en vez de KeyListener para evitar problemas de foco
+        // Antes: view.setFocusable(true); setupKeyBindings(); ahora la view ya configura los bindings
         view.setFocusable(true);
-        setupKeyBindings();
     }
 
     public void startGameLoop() {
@@ -43,12 +36,12 @@ public class GameController {
         timer = new Timer(16, (ActionEvent e) -> {
             lastTickTime = e.getWhen();
 
-            // Aplicar controles continuos según el estado de teclas
+            // Aplicar controles continuos según el estado de teclas en la view
             if (!model.isGameOver()) {
-                if (leftPressed) model.getShip().rotateLeft();
-                if (rightPressed) model.getShip().rotateRight();
-                if (upPressed) model.getShip().accelerate();
-                if (downPressed) model.getShip().brake();
+                if (view.isLeftPressed()) model.getShip().rotateLeft();
+                if (view.isRightPressed()) model.getShip().rotateRight();
+                if (view.isUpPressed()) model.getShip().accelerate();
+                if (view.isDownPressed()) model.getShip().brake();
             }
 
             model.update();
@@ -69,7 +62,7 @@ public class GameController {
         dialogVisible = true;
         if (timer != null && timer.isRunning()) {
             // Antes de detener, limpiar estados de teclas para que no queden activos al reiniciar
-            leftPressed = rightPressed = upPressed = downPressed = false;
+            view.resetKeyStates();
             if (model != null && model.getShip() != null) model.getShip().setThrusting(false);
             timer.stop();
         }
@@ -157,7 +150,7 @@ public class GameController {
         dialogVisible = true;
         if (timer != null && timer.isRunning()) {
             // Limpiar estados de teclas para que no queden activos al reiniciar
-            leftPressed = rightPressed = upPressed = downPressed = false;
+            view.resetKeyStates();
             if (model != null && model.getShip() != null) model.getShip().setThrusting(false);
             timer.stop();
         }
@@ -238,84 +231,5 @@ public class GameController {
         }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         dialog.setVisible(true);
-    }
-
-    private void setupKeyBindings() {
-        InputMap im = view.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-        ActionMap am = view.getActionMap();
-
-        // Rotación y movimiento continuos: registrar pressed/released
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0, false), "left.pressed");
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0, true), "left.released");
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0, false), "right.pressed");
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0, true), "right.released");
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0, false), "up.pressed");
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0, true), "up.released");
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0, false), "down.pressed");
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0, true), "down.released");
-
-        // Espacio: disparo en pulsación (una vez)
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0, false), "space.pressed");
-
-        am.put("left.pressed", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                leftPressed = true;
-            }
-        });
-        am.put("left.released", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                leftPressed = false;
-            }
-        });
-
-        am.put("right.pressed", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                rightPressed = true;
-            }
-        });
-        am.put("right.released", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                rightPressed = false;
-            }
-        });
-
-        am.put("up.pressed", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                upPressed = true;
-                if (!model.isGameOver()) model.getShip().setThrusting(true);
-            }
-        });
-        am.put("up.released", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                upPressed = false;
-                if (!model.isGameOver()) model.getShip().setThrusting(false);
-            }
-        });
-
-        am.put("down.pressed", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                downPressed = true;
-            }
-        });
-        am.put("down.released", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                downPressed = false;
-            }
-        });
-
-        am.put("space.pressed", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (!model.isGameOver()) model.shoot();
-            }
-        });
     }
 }

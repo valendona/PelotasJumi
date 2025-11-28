@@ -4,13 +4,23 @@ import model.*;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 
 public class GameView extends JPanel {
     private final GameModel model;
 
+    // Estados de teclas (moved here from controller)
+    private boolean leftPressed = false;
+    private boolean rightPressed = false;
+    private boolean upPressed = false;
+    private boolean downPressed = false;
+
     public GameView(GameModel model) {
         this.model = model;
         setBackground(Color.BLACK);
+        // Hacer foco y configurar bindings de teclado aquí
+        setFocusable(true);
+        setupKeyBindings();
     }
 
     @Override
@@ -125,5 +135,82 @@ public class GameView extends JPanel {
         // limitar entre 0.0 y 1.0
         if (Float.isNaN(alpha)) return 1.0f;
         return Math.max(0.0f, Math.min(1.0f, alpha));
+    }
+
+    // Getters para que el controller pueda leer el estado si lo necesita
+    public boolean isLeftPressed() { return leftPressed; }
+    public boolean isRightPressed() { return rightPressed; }
+    public boolean isUpPressed() { return upPressed; }
+    public boolean isDownPressed() { return downPressed; }
+
+    // Resetea los estados de teclas y la propulsión de la nave
+    public void resetKeyStates() {
+        leftPressed = rightPressed = upPressed = downPressed = false;
+        if (model != null && model.getShip() != null) model.getShip().setThrusting(false);
+    }
+
+    // Configuración de Key Bindings movida desde el controlador
+    private void setupKeyBindings() {
+        InputMap im = this.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap am = this.getActionMap();
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0, false), "left.pressed");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0, true), "left.released");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0, false), "right.pressed");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0, true), "right.released");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0, false), "up.pressed");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0, true), "up.released");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0, false), "down.pressed");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0, true), "down.released");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0, false), "space.pressed");
+
+        am.put("left.pressed", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) { leftPressed = true; }
+        });
+        am.put("left.released", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) { leftPressed = false; }
+        });
+
+        am.put("right.pressed", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) { rightPressed = true; }
+        });
+        am.put("right.released", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) { rightPressed = false; }
+        });
+
+        am.put("up.pressed", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                upPressed = true;
+                if (!model.isGameOver()) model.getShip().setThrusting(true);
+            }
+        });
+        am.put("up.released", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                upPressed = false;
+                if (!model.isGameOver()) model.getShip().setThrusting(false);
+            }
+        });
+
+        am.put("down.pressed", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) { downPressed = true; }
+        });
+        am.put("down.released", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) { downPressed = false; }
+        });
+
+        am.put("space.pressed", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!model.isGameOver()) model.shoot();
+            }
+        });
     }
 }
